@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>bonelf</artifactId>
+    <packaging>pom</packaging>
+    <version>1.0.0-SNAPSHOT</version>
+    <description>
+        项目经验总结，用作项目参考；非脚手架，选择性使用。
+    </description>
+
+    <parent>
+        <artifactId>bonelf-frame</artifactId>
+        <groupId>com.bonelf</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <modules>
+        <module>bonelf-common</module>
+        <module>bonelf-service-demo</module>
+        <module>bonelf-service-test</module>
+        <module>bonelf-gateway</module>
+        <module>bonelf-support</module>
+        <module>bonelf-auth</module>
+        <module>bonelf-service-user</module>
+    </modules>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <java.version>1.8</java.version>
+        <project.encoding>UTF-8</project.encoding>
+
+        <bonelf.version>${project.version}</bonelf.version>
+        <frame.version>1.0.0-SNAPSHOT</frame.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!--框架配置包-->
+            <dependency>
+                <groupId>com.bonelf</groupId>
+                <artifactId>bonelf-frame</artifactId>
+                <version>${frame.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!--common 依赖 直接导入父包会循环依赖警告-->
+            <!--<dependency>-->
+            <!--    <groupId>com.bonelf</groupId>-->
+            <!--    <artifactId>bonelf-common</artifactId>-->
+            <!--    <version>${bonelf.version}</version>-->
+            <!--    <type>pom</type>-->
+            <!--    <scope>import</scope>-->
+            <!--</dependency>-->
+            <dependency>
+                <groupId>com.bonelf</groupId>
+                <artifactId>bonelf-common-core</artifactId>
+                <version>${bonelf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bonelf</groupId>
+                <artifactId>bonelf-common-base</artifactId>
+                <version>${bonelf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bonelf</groupId>
+                <artifactId>bonelf-user-feign</artifactId>
+                <version>${bonelf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bonelf</groupId>
+                <artifactId>bonelf-support-main</artifactId>
+                <version>${bonelf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bonelf</groupId>
+                <artifactId>bonelf-support-feign</artifactId>
+                <version>${bonelf.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>com.spotify</groupId>
+                    <artifactId>docker-maven-plugin</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <!--镜像名称 bonelf/bonelf-gateway-app-->
+                        <imageName>bonelf/${project.artifactId}</imageName>
+                        <!--标签版本-->
+                        <imageTags>
+                            <imageTag>latest</imageTag>
+                        </imageTags>
+                        <!--基础镜像，相当于Dockerfile里的from-->
+                        <baseImage>java</baseImage>
+                        <!--标签版本-->
+                        <maintainer>bonelf me@bonelf.com</maintainer>
+                        <!--入口点，project.build.finalName就是project标签下的build标签下的filename标签内容，test-docker-demo-->
+                        <!--相当于启动容器后，会自动执行java -jar/bonelf-gateway-app.jar-->
+                        <entryPoint>["java", "-jar", "/${project.build.finalName}.jar"]</entryPoint>
+                        <!--docker地址-->
+                        <dockerHost>http://192.168.31.60:2375</dockerHost>
+
+                        <!-- 这里是复制 jar 包到 docker 容器指定目录配置 -->
+                        <resources>
+                            <resource>
+                                <targetPath>/</targetPath>
+                                <!--复制的根目录，target-->
+                                <directory>${project.build.directory}</directory>
+                                <!--把哪个文件上传到docker，相当于Dockerfile里的add test-docker-demo.jar /-->
+                                <include>${project.build.finalName}.jar</include>
+                            </resource>
+                        </resources>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <configuration>
+                        <executable>true</executable>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <!--指定JDK编译版本 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <encoding>${project.encoding}</encoding>
+                </configuration>
+            </plugin>
+            <!-- 打包跳过测试 idea可以直接在Maven打包中点击 蓝底圆形闪电图标 跳过测试 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <skipTests>true</skipTests>
+                </configuration>
+            </plugin>
+            <!-- 避免font文件的二进制文件格式压缩破坏 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <configuration>
+                    <nonFilteredFileExtensions>
+                        <nonFilteredFileExtension>woff</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>woff2</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>eot</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>ttf</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>svg</nonFilteredFileExtension>
+                    </nonFilteredFileExtensions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <repositories>
+        <repository>
+            <id>aliyun-repos</id>
+            <name>Aliyun Repository</name>
+            <url>http://maven.aliyun.com/nexus/content/groups/public</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+
+        <repository>
+            <id>sonatype-repos</id>
+            <name>Sonatype Repository</name>
+            <url>https://oss.sonatype.org/content/groups/public</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>sonatype-repos-s</id>
+            <name>Sonatype Repository</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+
+        <repository>
+            <id>spring-snapshots</id>
+            <name>Spring Snapshots</name>
+            <url>https://repo.spring.io/snapshot</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/milestone</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>aliyun-repos</id>
+            <name>Aliyun Repository</name>
+            <url>http://maven.aliyun.com/nexus/content/groups/public</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+
+</project>
